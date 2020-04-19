@@ -1,0 +1,48 @@
+#!/bin/sh
+set -e
+
+if [ "$#" -lt 2 ]; then
+    echo '请输入 拉流源 和 推流源'
+    exit
+fi
+
+# 是否包含logo
+if [ -z "$3" ]; then 
+    withLogo=1
+else 
+    withLogo="$3"
+fi
+
+# logo 占源视频宽度比例
+if [ -z "$4" ]; then 
+    logoWidthPercent=25
+else 
+    logoWidthPercent="$4"
+fi
+
+# logo 距左侧百分比
+if [ -z "$5" ]; then 
+    leftPercent=1
+else 
+    leftPercent="$5"
+fi
+
+# logo 局顶部百分比
+if [ -z "$6" ]; then 
+    topPercent=1
+else 
+    topPercent="$6"
+fi
+
+pullSource="$1"
+pushSource="$2"
+
+if [ "$withLogo" -eq 0 ]; then
+    # 不带logo
+    set -- ffmpeg -stats -re -i "$pullSource" -vcodec copy -acodec copy -f flv "$pushSource"
+else 
+    # 带 logo
+    set -- ffmpeg -stats -re -i "$pullSource" -i "/usr/local/share/live-logo.png" -filter_complex "[1][0]scale2ref=w='iw*$logoWidthPercent/100':h='ow/mdar'[wm][vid];[vid][wm]overlay=main_w/100*$leftPercent:main_h*$topPercent/100" -vcodec h264 -acodec copy -f flv "$pushSource"
+fi
+
+exec "$@"
