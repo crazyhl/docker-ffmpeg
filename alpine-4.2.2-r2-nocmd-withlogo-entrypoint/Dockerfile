@@ -3,7 +3,7 @@ MAINTAINER  M1racle Hao <crazyhl@163.com>
 
 RUN     apk  add --no-cache --update ffmpeg
 
-COPY live_logo.png /usr/local/share/
+COPY live-logo.png /usr/local/share/
 COPY docker-ffmpeg-entrypoint /usr/local/bin/
 
 CMD         ["ffmpeg"]
