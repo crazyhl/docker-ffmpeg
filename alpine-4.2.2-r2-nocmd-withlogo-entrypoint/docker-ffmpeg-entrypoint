@@ -1,48 +1,60 @@
 #!/bin/sh
 set -e
 
-if [ "$#" -lt 2 ]; then
-    echo '请输入 拉流源 和 推流源'
-    exit
+# first arg is `-v` or `--some-option`
+if [ "${1#-}" != "$1" ]; then
+    set -- ffmpeg "$@"
 fi
 
-# 是否包含logo
-if [ -z "$3" ]; then 
-    withLogo=1
-else 
-    withLogo="$3"
-fi
+# live ..
+if [ "$1" = 'live' ]; then
+    # 至少输入两个参数
+    if [ "$#" -lt 3 ]; then
+        echo "Usage: live pullStream pushStream [withLogo] [logoWidthPercent] [leftPercent] [topPercent]"
+        exit
+    fi
 
-# logo 占源视频宽度比例
-if [ -z "$4" ]; then 
-    logoWidthPercent=25
-else 
-    logoWidthPercent="$4"
-fi
+    # 是否包含 logo
+    if [ -z "$4" ]; then
+        withLogo="/usr/local/share/live-logo.png"
+    else
+        withLogo="$4"
+    fi
 
-# logo 距左侧百分比
-if [ -z "$5" ]; then 
-    leftPercent=1
-else 
-    leftPercent="$5"
-fi
+    # logo 占源视频宽度比例
+    if [ -z "$5" ]; then
+        logoWidthPercent=25
+    else
+        logoWidthPercent="$5"
+    fi
 
-# logo 局顶部百分比
-if [ -z "$6" ]; then 
-    topPercent=1
-else 
-    topPercent="$6"
-fi
+    # logo 距左侧百分比
+    if [ -z "$6" ]; then
+        leftPercent=1
+    else
+        leftPercent="$6"
+    fi
 
-pullSource="$1"
-pushSource="$2"
+    # logo 局顶部百分比
+    if [ -z "$7" ]; then
+        topPercent=1
+    else
+        topPercent="$7"
+    fi
 
-if [ "$withLogo" -eq 0 ]; then
-    # 不带logo
-    set -- ffmpeg -stats -re -i "$pullSource" -vcodec copy -acodec copy -f flv "$pushSource"
-else 
-    # 带 logo
-    set -- ffmpeg -stats -re -i "$pullSource" -i "/usr/local/share/live-logo.png" -filter_complex "[1][0]scale2ref=w='iw*$logoWidthPercent/100':h='ow/mdar'[wm][vid];[vid][wm]overlay=main_w/100*$leftPercent:main_h*$topPercent/100" -vcodec h264 -acodec copy -f flv "$pushSource"
+    pullStream="$2"
+    pushStream="$3"
+
+    if [ "${withLogo}" = '0' ]; then
+        # 不带 logo
+        set -- ffmpeg -stats -re -i "${pullStream}" -vcodec copy -acodec copy -f flv "${pushStream}"
+    else
+        # 带 logo
+        set -- ffmpeg -stats -re -i "${pullStream}" -i "${withLogo}" -filter_complex "[1][0]scale2ref=w='iw*${logoWidthPercent}/100':h='ow/mdar'[wm][vid];[vid][wm]overlay=main_w/100*${leftPercent}:main_h*${topPercent}/100" -vcodec h264 -acodec copy -f flv "${pushStream}"
+    fi
+
+    echo "$@"
+    echo '------------------------------------------------------------'
 fi
 
 exec "$@"
